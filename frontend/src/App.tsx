@@ -1,7 +1,13 @@
 import { Suspense, use, useState } from "react";
 import axios from "axios";
 import SearchForm from "./components/SearchForm";
-import { MapPin, Search, Loader2 } from "lucide-react";
+import Result from "./components/Result";
+
+export type fetchResultDataType = {
+  station: { name: string };
+  exit: { number: string };
+  distance: number;
+};
 
 const fetchData = async (): Promise<{ ok: string }[]> => {
   try {
@@ -12,6 +18,23 @@ const fetchData = async (): Promise<{ ok: string }[]> => {
   } catch (error) {
     console.error("Error fetching data", error);
     return [];
+  }
+};
+
+const fetchResultData = async (
+  searchValue: string
+): Promise<fetchResultDataType | null> => {
+  try {
+    const response = await axios.post<fetchResultDataType>(
+      "http://localhost:8787/search-exit",
+      { searchValue: searchValue }
+    );
+
+    return response.data;
+    //TODO catch時の返り値
+  } catch (error) {
+    console.error("Error fetching data", error);
+    return null;
   }
 };
 
@@ -29,15 +52,31 @@ const Test = ({
     </>
   );
 };
-``;
+
 function App() {
   const messagesPromise = fetchData();
   const [inputValue, setInputValue] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const [searchResult, setSearchResult] = useState<fetchResultDataType | null>(
+    null
+  );
 
-  const searchNearestExit = () => {};
+  const searchNearestExit = async (): Promise<{ ok: string }[]> => {
+    fetchResultData(inputValue).then((result) => {
+      setSearchResult(result);
+      console.log({ result });
+    });
 
-  const [formData, setFormData] = useState<FormData | null>(null);
+    try {
+      const response = await axios.get<{ ok: string }[]>(
+        "http://localhost:8787/test"
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching data", error);
+      return [];
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 to-purple-100 dark:from-gray-900 dark:to-gray-800 p-4">
@@ -51,33 +90,11 @@ function App() {
             setInputValue={setInputValue}
             loading={loading}
             setLoading={setLoading}
+            searchNearestExit={searchNearestExit}
           ></SearchForm>
 
-          {/* {result && (
-            <div className="mt-6 bg-blue-50 dark:bg-gray-700 p-4 rounded-lg shadow-inner transition-all duration-300 ease-in-out">
-              <h3 className="text-xl font-bold mb-3 text-blue-700 dark:text-blue-300">
-                Closest Station
-              </h3>
-              <div className="space-y-2">
-                <p className="flex items-center text-lg text-gray-800 dark:text-gray-200">
-                  <span className="mr-2 text-2xl">🚇</span>
-                  <span className="font-medium">{result.station.name}</span>
-                </p>
-                <p className="flex items-center text-lg text-gray-800 dark:text-gray-200">
-                  <span className="mr-2 text-2xl">🚪</span>
-                  <span>Exit {result.exit.number}</span>
-                </p>
-                <p className="flex items-center text-lg text-gray-800 dark:text-gray-200">
-                  <span className="mr-2 text-2xl">📏</span>
-                  <span>{result.distance.toFixed(2)} km</span>
-                </p>
-              </div>
-            </div>
-          )} */}
+          {searchResult && <Result searchResult={searchResult}></Result>}
         </div>
-        <Suspense fallback={<div>loading...</div>}>
-          <Test messagesPromise={messagesPromise} />
-        </Suspense>
       </div>
     </div>
   );

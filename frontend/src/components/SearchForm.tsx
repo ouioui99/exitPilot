@@ -1,11 +1,12 @@
 import { Loader2, MapPin, Search } from "lucide-react";
-import React, { useState } from "react";
+import React from "react";
 
 type SearchFormProps = {
   inputValue: string;
   setInputValue: React.Dispatch<React.SetStateAction<string>>;
   loading: boolean;
   setLoading: React.Dispatch<React.SetStateAction<boolean>>;
+  searchNearestExit: () => void;
 };
 
 export default function SearchForm({
@@ -13,13 +14,14 @@ export default function SearchForm({
   setInputValue,
   loading,
   setLoading,
+  searchNearestExit,
 }: SearchFormProps) {
   const handleSearch = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault(); // デフォルトのページリロードを防ぐ
     setLoading(true);
-
+    searchNearestExit();
     await new Promise((resolve) => setTimeout(resolve, 1500)); // APIコールのシミュレーション
-
+    setInputValue("");
     setLoading(false);
   };
 

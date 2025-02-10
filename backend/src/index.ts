@@ -37,12 +37,17 @@ app.get("/test", (c) => {
   return c.json([{ ok: "Hello Honoaaa!" }]);
 });
 
-app.post("/test/post", async (c) => {
-  const { id, password } = await c.req.parseBody();
+app.post("/search-exit", async (c) => {
+  const { searchValue } = await c.req.parseBody();
 
-  console.log({ id, password });
+  console.log({ searchValue });
+  await new Promise((resolve) => setTimeout(resolve, 1500));
 
-  return c.text("Hello, Hono!");
+  return c.json({
+    station: { name: "Example Station" },
+    exit: { number: "3" },
+    distance: 0.5,
+  });
 });
 
 serve({
