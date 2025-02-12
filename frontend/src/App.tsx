@@ -9,72 +9,59 @@ export type fetchResultDataType = {
   distance: number;
 };
 
-const fetchData = async (): Promise<{ ok: string }[]> => {
-  try {
-    const response = await axios.get<{ ok: string }[]>(
-      "http://localhost:8787/test"
-    );
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching data", error);
-    return [];
-  }
-};
-
 const fetchResultData = async (
   searchValue: string
 ): Promise<fetchResultDataType | null> => {
   try {
     const response = await axios.post<fetchResultDataType>(
-      "http://localhost:8787/search-exit",
-      { searchValue: searchValue }
+      "http://localhost:8787/",
+      { searchValue },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
     );
-
     return response.data;
-    //TODO catch時の返り値
   } catch (error) {
-    console.error("Error fetching data", error);
-    return null;
+    if (axios.isAxiosError(error)) {
+      throw error; // フロントエンド側で適切に処理
+    }
+    console.error("Unexpected error:", error);
+    throw new Error("An unexpected error occurred.");
   }
 };
 
-const Test = ({
-  messagesPromise,
-}: {
-  messagesPromise: Promise<{ ok: string }[]>;
-}) => {
-  const messages = use(messagesPromise);
-  return (
-    <>
-      {messages.map((message, i) => (
-        <li key={i}>{message.ok}</li>
-      ))}
-    </>
-  );
-};
-
 function App() {
-  const messagesPromise = fetchData();
   const [inputValue, setInputValue] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [searchResult, setSearchResult] = useState<fetchResultDataType | null>(
     null
   );
+  const [errorMessage, setErrorMessage] = useState<string | null>(null); // 追加
 
-  const searchNearestExit = async (): Promise<{ ok: string }[]> => {
-    fetchResultData(inputValue).then((result) => {
-      setSearchResult(result);
-      console.log({ result });
-    });
+  const searchNearestExit = async () => {
+    setLoading(true);
+    setErrorMessage(null);
 
     try {
-      const response = await axios.get<{ ok: string }[]>(
-        "http://localhost:8787/test"
-      );
-      return response.data;
+      const result = await fetchResultData(inputValue);
+      if (!result) {
+        throw new Error("No results found. Please try again.");
+      }
+      setSearchResult(result);
+      setInputValue("");
     } catch (error) {
-      console.error("Error fetching data", error);
-      return [];
+      if (axios.isAxiosError(error)) {
+        setErrorMessage(
+          error.response?.data.error.issues[0].message ||
+            "Failed to fetch data."
+        );
+      } else {
+        setErrorMessage("An unexpected error occurred.");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -91,9 +78,9 @@ function App() {
             loading={loading}
             setLoading={setLoading}
             searchNearestExit={searchNearestExit}
-          ></SearchForm>
-
-          {searchResult && <Result searchResult={searchResult}></Result>}
+            errorMessage={errorMessage} // 追加
+          />
+          {searchResult && <Result searchResult={searchResult} />}
         </div>
       </div>
     </div>

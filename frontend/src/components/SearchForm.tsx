@@ -7,22 +7,19 @@ type SearchFormProps = {
   loading: boolean;
   setLoading: React.Dispatch<React.SetStateAction<boolean>>;
   searchNearestExit: () => void;
+  errorMessage: string | null; // 追加
 };
 
 export default function SearchForm({
   inputValue,
   setInputValue,
   loading,
-  setLoading,
   searchNearestExit,
+  errorMessage,
 }: SearchFormProps) {
   const handleSearch = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault(); // デフォルトのページリロードを防ぐ
-    setLoading(true);
+    event.preventDefault();
     searchNearestExit();
-    await new Promise((resolve) => setTimeout(resolve, 1500)); // APIコールのシミュレーション
-    setInputValue("");
-    setLoading(false);
   };
 
   return (
@@ -37,6 +34,10 @@ export default function SearchForm({
           className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
         />
       </div>
+
+      {errorMessage && ( // エラーがある場合のみ表示
+        <p className="text-red-500 text-sm">{errorMessage}</p>
+      )}
 
       <button
         type="submit"

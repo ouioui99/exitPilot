@@ -1,26 +1,18 @@
 import { serve } from "@hono/node-server";
-import { log } from "console";
+import { z } from "zod";
+import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 
 const app = new Hono();
 const port = 8787;
 
-const test = async () => {
-  const url = "https://dog.ceo/api/breeds/image/random";
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      console.log(test);
-      throw new Error(`レスポンスステータス: ${response.status}`);
-    }
-
-    const json = await response.json();
-    console.log(json);
-  } catch (error) {
-    //console.error(error.message);
-  }
-};
+// スキーマ定義
+const schema = z
+  .object({
+    searchValue: z.string().min(1, "検索ワードを入力してください"),
+  })
+  .strict(); // .strict() で未定義のキーを禁止
 
 app.use(
   "*",
@@ -33,21 +25,47 @@ app.use(
 );
 
 app.get("/test", (c) => {
-  test();
   return c.json([{ ok: "Hello Honoaaa!" }]);
 });
 
-app.post("/search-exit", async (c) => {
-  const { searchValue } = await c.req.parseBody();
+app.post(
+  "/",
+  zValidator("json", schema),
 
-  console.log({ searchValue });
-  await new Promise((resolve) => setTimeout(resolve, 1500));
+  async (c) => {
+    const { searchValue } = c.req.valid("json");
+    return c.json({
+      station: { name: "Example Station" },
+      exit: { number: "3" },
+      distance: 0.5,
+    });
+    // const { searchValue } = await c.req.json();
 
-  return c.json({
-    station: { name: "Example Station" },
-    exit: { number: "3" },
-    distance: 0.5,
-  });
+    // console.log({ searchValue });
+    // await new Promise((resolve) => setTimeout(resolve, 1500));
+
+    // return c.json({
+    //   station: { name: "Example Station" },
+    //   exit: { number: "3" },
+    //   distance: 0.5,
+    // });
+
+    // ... do something
+    return c.json(
+      {
+        message: "Created!",
+      },
+      201
+    );
+  }
+);
+
+// **💡 バリデーションエラーハンドラー**
+app.onError((err, c) => {
+  if (err instanceof z.ZodError) {
+    return c.json({ message: err.errors[0].message }, 400);
+  }
+  return c.json({ message: "Internal Server Error" }, 500);
 });
 
 serve({
