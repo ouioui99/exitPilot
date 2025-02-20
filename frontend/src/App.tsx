@@ -50,6 +50,8 @@ function App() {
         throw new Error("No results found. Please try again.");
       }
       setSearchResult(result);
+      console.log(result);
+
       setInputValue("");
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -80,7 +82,7 @@ function App() {
             searchNearestExit={searchNearestExit}
             errorMessage={errorMessage} // 追加
           />
-          {searchResult && <Result searchResult={searchResult} />}
+          {/* {searchResult && <Result searchResult={searchResult} />} */}
         </div>
       </div>
     </div>

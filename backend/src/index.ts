@@ -4,6 +4,11 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 
+import { getGeocodeingResult } from "./api/nominatim.js";
+import { searchNerestExitFromSupabase } from "./api/supabase.js";
+import { findNearestExit } from "./util/calculate.js";
+import { stationDataList } from "./data/station.js";
+
 const app = new Hono();
 const port = 8787;
 
@@ -24,39 +29,26 @@ app.use(
   })
 );
 
-app.get("/test", (c) => {
-  return c.json([{ ok: "Hello Honoaaa!" }]);
-});
-
 app.post(
   "/",
   zValidator("json", schema),
 
   async (c) => {
+    let result;
     const { searchValue } = c.req.valid("json");
-    return c.json({
-      station: { name: "Example Station" },
-      exit: { number: "3" },
-      distance: 0.5,
-    });
-    // const { searchValue } = await c.req.json();
+    const geocodeingResult = await getGeocodeingResult(searchValue);
+    console.log(geocodeingResult);
+    if (geocodeingResult && "lat" in geocodeingResult) {
+      console.log("aaaa");
+      result = findNearestExit(
+        stationDataList,
+        geocodeingResult.lat,
+        geocodeingResult.lon
+      );
+      console.log(result);
+    }
 
-    // console.log({ searchValue });
-    // await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    // return c.json({
-    //   station: { name: "Example Station" },
-    //   exit: { number: "3" },
-    //   distance: 0.5,
-    // });
-
-    // ... do something
-    return c.json(
-      {
-        message: "Created!",
-      },
-      201
-    );
+    return c.json(result);
   }
 );
 
